@@ -1,0 +1,118 @@
+<#
+Scope:
+Mass AD user account creation
+
+Description:
+Create new AD user(s) using the information provided in the filled out excel sheet
+
+Use:
+  Save the script to a dedicated folder. 
+
+   HR to fill out excel sheet, NewUser-Input.xlsx, with user relevant user information -
+      [ Username,Firstname,Lastname,Initials,Email,Streetaddress,City,Zipcode,State,Country,Telephone,Jobtitle,Company,Department ]
+
+   Once Excel sheet information is filled in will be saved directly to same folder as script
+
+  Run Script, Script process:
+
+       Converts the xlsx (excel) sheet to csv, then import it.
+
+       Pull all the information for one or multiple users and validates user is not already created, if not, creates new AD user, adding in all the relevant information. 
+ 
+  After script runs, post processing will archive the input xlsx file and store it in 'Archive' folder.
+
+#>
+
+
+# Delete Current CSV File and Output Folders
+   Remove-Item '.\NewUsersFinal.csv' -ErrorAction SilentlyContinue
+
+# Verify Archive Directory and set variable for archive folder
+   If (test-path .\Archive){
+    $archive='.\Archive' 
+  }else {
+    new-item -path '.\' -itemtype directory -name Archive
+    $archive='.\Archive'
+ 
+}
+if (test-path '.\NewUser-Input.xlsx'){
+$File=gci '.\NewUser-Input.xlsx'
+}
+
+# Convert Matster Excel File to Master CSV File
+    $File=gci '.\NewUser-Input.xlsx'
+    $Excel = New-Object -ComObject Excel.Application
+    $wb = $Excel.Workbooks.Open($File)
+
+
+    $x = $File | Select-Object Directory, BaseName
+    $n = [System.IO.Path]::Combine($x.Directory, (("NewUsersFinal", 'csv') -join "."))
+
+    foreach ($ws in $wb.Worksheets) {
+        $ws.SaveAs($n, 6)
+    }
+    $Excel.Quit()
+
+# End Excel to CSV Conversion
+
+# Store the data from NewUsersFinal.csv in the $ADUsers variable
+
+$ADUsers = Import-Csv .\NewUsersFinal.csv
+
+#set standard variables
+$Password=ConvertTo-SecureString 'Password101' -AsPlainText -Force 
+$UPN='teknet.local'
+$OU='OU=Automation,DC=teknet,DC=local'
+
+# Loop through each row containing user details in the CSV file
+foreach ($User in $ADUsers) {
+
+    $username = $user.username
+    $UPN=$username+$UPN
+    $exists = Get-ADUser -Filter { SamAccountName -eq $username }
+
+    if (!$exists) {
+
+    #Read user data from each field in each row and create hash table to splat for user creation
+    $hash=@{
+         SamAccountName         = $username
+         UserPrincipalName      = $UPN
+         Name                   = $user.firstname +$user.lastname
+         GivenName              = $user.firstname
+         Surname                = $user.lastname 
+         Initials               = $user.initials 
+         Enabled                = $True 
+         DisplayName            = $user.lastname +',' +$user.firstname 
+         Path                   = $ou
+         City                   = $user.city 
+         PostalCode             = $user.zipcode 
+         Country                = $user.country 
+         Company                = $user.company 
+         State                  = $user.state 
+         StreetAddress          = $user.streetaddress 
+         OfficePhone            = $user.telephone 
+         EmailAddress           = $user.email 
+         Title                  = $user.jobtitle 
+         Department             = $user.department 
+         AccountPassword        = $Password        
+         ChangePasswordAtLogon  = $True 
+     }
+        New-ADUser @hash -passthru  
+    }
+    else {
+            
+        # If user does exist, give a warning
+        Write-Warning "A user account with username $username already exists in Active Directory."
+ } 
+}
+
+# Rename and Archive XLSX File
+$date=(get-date -Format "MM-dd-yyyy-hhmm")
+$newname="$($file.basename)-Archive-$date"+".xlsx"
+if ($file){
+Rename-Item -path $file.fullname -newname $newname
+Move-Item -path .\$newname -Destination $archive -force
+}
+
+
+Read-Host -Prompt "Press Enter to exit"
