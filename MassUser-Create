@@ -19,12 +19,13 @@ Use:
    Once Excel sheet information is filled out with user relevant information.  It should be saved directly to same folder as script
 
   Run Script, Script process:
+       -Script will not run IF 'NewUser-Input.xlsx' file is not found in the directory
+       -Converts the xlsx (excel) sheet into a csv, then imports the csv into a PS variable.
+       -Pulls all the information in from the csv for one or multiple users, validates each user is not already created. 
+       -If user not already created, new AD user is created, setting all the relevant information pulled from the csv for each account. 
+       -Script set natively to create account in disabled state.
+       -After script runs, post processing will archive the input xlsx file and store it in 'Archive' folder with a timestamp.
 
-       Converts the xlsx (excel) sheet to a csv, then imports it into a PS variable.
-
-       Pull all the information for one or multiple users and validates user is not already created, if not, creates new AD user, adding in all the relevant information. 
- 
-       After script runs, post processing will archive the input xlsx file and store it in 'Archive' folder with a timestamp.
 #>
 
 # Start Script
@@ -78,7 +79,7 @@ Use:
                         GivenName              = $user.firstname
                         Surname                = $user.lastname 
                         Initials               = $user.initials 
-                        Enabled                = $True 
+                        Enabled                = $False
                         DisplayName            = $user.lastname +','+$user.firstname 
                         Path                   = $ou
                         City                   = $user.city 
