@@ -1,3 +1,5 @@
+#Requires ActiveDirectory module, Excel/MS office
+
 <#
 Scope:
 Mass AD user account creation
