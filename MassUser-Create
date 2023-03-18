@@ -1,5 +1,6 @@
+
 <#
-Requires -
+Requires 
      ActiveDirectory Module 
      MS OFFICE - EXCEL Installed
 
@@ -27,21 +28,21 @@ Use:
 #>
 
 # Start Script
-<#
+
 # Delete Current CSV File
-   Remove-Item '.\NewUsersFinal.csv' -ErrorAction SilentlyContinue
+ #  Remove-Item '.\NewUsersFinal.csv' -ErrorAction SilentlyContinue
 
 # Verify Archive Directory, Create if not present. Set variable for Archive folder
    If (test-path .\Archive){
     $archive='.\Archive' 
      }else {
-         new-item -path '.\' -itemtype directory -name Archive
+         new-item -path '.\' -itemtype directory -name Archive | out-null
          $archive='.\Archive' 
 }
 # Verify if User creation Excel File is present first before running.  If present, sets variable for the file
      if (test-path '.\NewUser-Input.xlsx'){
-      $File=gci '.\NewUser-Input.xlsx'
-    }else { Throw 'NewUser-Input Script not available. Make sure script is copied to target directory then run again.';return}
+        $File=gci '.\NewUser-Input.xlsx'
+        }else { write-warning 'NewUser-Input Script not available. Make sure script is copied to target directory then run again.';return}
 
 # Convert Matster Excel File to Master CSV File
     $File=gci '.\NewUser-Input.xlsx'
@@ -52,7 +53,7 @@ Use:
     foreach ($ws in $wb.Worksheets) {
         $ws.SaveAs($n, 6)
     }
-    $Excel.Quit()#>
+    $Excel.Quit()
 # End Excel to CSV Conversion
 
 # Store the data from NewUsersFinal.csv in the $ADUsers variable
@@ -97,7 +98,7 @@ Use:
               
    # If user does exist, give a warning
              } else {
-        Write-Warning "A user account with username $user.username already exists in Active Directory."; continue
+        Write-Warning "A user account with username $($user.username) already exists in Active Directory."; continue
       } 
      }
 # Rename and Archive XLSX File
